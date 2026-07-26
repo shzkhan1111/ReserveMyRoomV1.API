@@ -43,17 +43,16 @@ using (var scope = app.Services.CreateScope())
 
 app.UseMiddleware<GlobalExceptionMiddleware>();
 
-if (app.Environment.IsDevelopment())
+//if (app.Environment.IsDevelopment())
+//{
+ app.MapOpenApi();   
+//}
+app.UseSwaggerUI(options =>
 {
-    app.MapOpenApi();
-
-    app.UseSwaggerUI(options =>
-    {
-        options.SwaggerEndpoint(
-            "/openapi/v1.json",
-            "ReserveMyRoom API");
-    });
-}
+    options.SwaggerEndpoint(
+        "/openapi/v1.json",
+        "ReserveMyRoom API");
+});
 
 app.UseHttpsRedirection();
 
