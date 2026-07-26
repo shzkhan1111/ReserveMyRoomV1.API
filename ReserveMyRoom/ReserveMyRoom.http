@@ -1,0 +1,35 @@
+@ReserveMyRoom_HostAddress = http://localhost:5176
+
+GET {{ReserveMyRoom_HostAddress}}/api/hotels
+Accept: application/json
+
+###
+
+GET {{ReserveMyRoom_HostAddress}}/api/hotels/search?name=Rosewood
+Accept: application/json
+
+###
+
+GET {{ReserveMyRoom_HostAddress}}/api/hotels/1/rooms/available?checkInDate=2026-08-01&checkOutDate=2026-08-05&numberOfGuests=2
+Accept: application/json
+
+###
+
+POST {{ReserveMyRoom_HostAddress}}/api/bookings
+Content-Type: application/json
+
+{
+  "roomId": 1,
+  "guestName": "Alex Bales",
+  "numberOfGuests": 1,
+  "checkInDate": "2026-08-01",
+  "checkOutDate": "2026-08-05"
+}
+
+###
+
+POST {{ReserveMyRoom_HostAddress}}/api/data/seed
+
+###
+
+DELETE {{ReserveMyRoom_HostAddress}}/api/data

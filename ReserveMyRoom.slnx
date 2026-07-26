@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="ReserveMyRoom.API.Tests/ReserveMyRoom.API.Tests.csproj" Id="59a001e5-74e9-4e6e-a339-de1809a025da" />
+  <Project Path="ReserveMyRoom/ReserveMyRoom.API.csproj" />
+</Solution>
