@@ -12,8 +12,8 @@ using ReserveMyRoom.API.Data;
 namespace ReserveMyRoom.API.Migrations
 {
     [DbContext(typeof(ReserveMyRoomDbContext))]
-    [Migration("20260726215916_test")]
-    partial class test
+    [Migration("20260726223119_init")]
+    partial class init
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
