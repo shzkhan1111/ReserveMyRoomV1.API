@@ -35,6 +35,11 @@ namespace ReserveMyRoom.API.Data
                 .HasMaxLength(20);
 
             modelBuilder.Entity<Room>()
+                .ToTable(table => table.HasCheckConstraint(
+                    "CK_Rooms_Capacity",
+                    "[Capacity] >= 1"));
+
+            modelBuilder.Entity<Room>()
                 .HasIndex(room => new
                 {
                     room.HotelId,
@@ -67,7 +72,7 @@ namespace ReserveMyRoom.API.Data
             modelBuilder.Entity<Booking>()
                 .ToTable(table => table.HasCheckConstraint(
                     "CK_Bookings_NumberOfGuests",
-                    "[NumberOfGuests] BETWEEN 1 AND 4"));
+                    "[NumberOfGuests] >= 1"));
 
             modelBuilder.Entity<Booking>()
                 .ToTable(table => table.HasCheckConstraint(

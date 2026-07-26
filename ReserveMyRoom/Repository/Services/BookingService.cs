@@ -22,6 +22,10 @@ public class BookingService : IBookingService
         CancellationToken cancellationToken = default)
     {
         ValidateRequest(request);
+        StayValidator.Validate(
+            request.CheckInDate,
+            request.CheckOutDate,
+            request.NumberOfGuests);
 
         IDbContextTransaction? transaction = null;
         if (_context.Database.IsRelational())
@@ -67,7 +71,8 @@ public class BookingService : IBookingService
 
             var booking = new Booking
             {
-                BookingReference = $"BK-{Guid.NewGuid():N}",
+                BookingReference =
+                    $"BK-{Guid.NewGuid():N}".ToUpperInvariant(),
                 GuestName = request.GuestName.Trim(),
                 NumberOfGuests = request.NumberOfGuests,
                 CheckInDate = request.CheckInDate,
@@ -136,25 +141,6 @@ public class BookingService : IBookingService
             throw new ArgumentException("Guest name cannot exceed 150 characters.");
         }
 
-        if (request.NumberOfGuests is < 1 or > 4)
-        {
-            throw new ArgumentException("Number of guests must be between 1 and 4.");
-        }
-
-        if (request.CheckInDate == default || request.CheckOutDate == default)
-        {
-            throw new ArgumentException("Check-in and check-out dates are required.");
-        }
-
-        if (request.CheckOutDate <= request.CheckInDate)
-        {
-            throw new ArgumentException("Check-out date must be after check-in date.");
-        }
-
-        if (request.CheckInDate < DateOnly.FromDateTime(DateTime.UtcNow))
-        {
-            throw new ArgumentException("Check-in date cannot be in the past.");
-        }
     }
 
     private static BookingResponse MapBooking(Booking booking, Room room)

@@ -36,22 +36,4 @@ public class HotelsController : ControllerBase
         return Ok(hotels);
     }
 
-    [HttpGet("{hotelId:int}/rooms/available")]
-    public async Task<IActionResult>
-        GetAvailableRooms(
-            int hotelId,
-            [FromQuery] DateOnly checkInDate,
-            [FromQuery] DateOnly checkOutDate,
-            [FromQuery] int numberOfGuests,
-            CancellationToken cancellationToken)
-    {
-        var rooms = await _hotelService.GetAvailableRoomsAsync(
-            hotelId,
-            checkInDate,
-            checkOutDate,
-            numberOfGuests,
-            cancellationToken);
-
-        return Ok(rooms);
-    }
 }

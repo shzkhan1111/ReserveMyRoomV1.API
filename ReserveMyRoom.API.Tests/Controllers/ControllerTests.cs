@@ -3,12 +3,50 @@ using Moq;
 using ReserveMyRoom.API.Controllers;
 using ReserveMyRoom.API.DTO.Booking;
 using ReserveMyRoom.API.DTO.Hotels;
+using ReserveMyRoom.API.DTO.Rooms;
 using ReserveMyRoom.API.Repository.Interface;
 
 namespace ReserveMyRoom.API.Tests.Controllers;
 
 public class ControllerTests
 {
+    [Fact]
+    public async Task GetAvailableRooms_AllowsHotelFilterToBeOmitted()
+    {
+        var rooms = new[]
+        {
+            new AvailableRoomResponse
+            {
+                HotelId = 1,
+                HotelName = "Test Hotel",
+                RoomId = 10,
+                RoomNumber = "101",
+                Capacity = 2
+            }
+        };
+        var service = new Mock<IRoomService>();
+        var checkIn = new DateOnly(2026, 8, 1);
+        var checkOut = new DateOnly(2026, 8, 2);
+        service.Setup(candidate => candidate.GetAvailableRoomsAsync(
+                checkIn,
+                checkOut,
+                2,
+                null,
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(rooms);
+        var controller = new RoomsController(service.Object);
+
+        var result = await controller.GetAvailableRooms(
+            checkIn,
+            checkOut,
+            2,
+            null,
+            CancellationToken.None);
+
+        var ok = Assert.IsType<OkObjectResult>(result);
+        Assert.Same(rooms, ok.Value);
+    }
+
     [Fact]
     public async Task CreateBooking_ReturnsCreatedWithLookupRoute()
     {

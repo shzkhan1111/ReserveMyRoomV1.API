@@ -10,7 +10,12 @@ Accept: application/json
 
 ###
 
-GET {{ReserveMyRoom_HostAddress}}/api/hotels/1/rooms/available?checkInDate=2026-08-01&checkOutDate=2026-08-05&numberOfGuests=2
+GET {{ReserveMyRoom_HostAddress}}/api/rooms/available?checkInDate=2026-08-01&checkOutDate=2026-08-05&numberOfGuests=2
+Accept: application/json
+
+###
+
+GET {{ReserveMyRoom_HostAddress}}/api/rooms/available?checkInDate=2026-08-01&checkOutDate=2026-08-05&numberOfGuests=2&hotelId=1
 Accept: application/json
 
 ###

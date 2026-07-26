@@ -10,14 +10,8 @@ namespace ReserveMyRoom.API.Models
         public string RoomNumber { get; set; } = string.Empty;
 
         public RoomType RoomType { get; set; }
-        public int Capacity => RoomType switch
-        {
-            RoomType.Single => 1,
-            RoomType.Double => 2,
-            RoomType.Deluxe => 4,
-            _ => throw new InvalidOperationException(
-                $"{RoomType} is not a supported room type.")
-        };
+
+        public int Capacity { get; set; }
 
         public int HotelId { get; set; }
 

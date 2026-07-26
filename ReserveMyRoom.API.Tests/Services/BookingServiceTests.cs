@@ -33,6 +33,7 @@ namespace ReserveMyRoom.API.Tests.Services
             {
                 RoomNumber = "101",
                 RoomType = RoomType.Single,
+                Capacity = 1,
                 Hotel = hotel
             };
 
@@ -73,6 +74,7 @@ namespace ReserveMyRoom.API.Tests.Services
             {
                 RoomNumber = "101",
                 RoomType = RoomType.Double,
+                Capacity = 2,
                 Hotel = hotel
             };
 
@@ -101,6 +103,9 @@ namespace ReserveMyRoom.API.Tests.Services
             Assert.Equal(request.CheckOutDate, result.CheckOutDate);
 
             Assert.StartsWith("BK-", result.BookingReference);
+            Assert.Equal(
+                result.BookingReference.ToUpperInvariant(),
+                result.BookingReference);
 
             Assert.Equal(1, context.Bookings.Count());
         }
@@ -120,6 +125,7 @@ namespace ReserveMyRoom.API.Tests.Services
             {
                 RoomNumber = "101",
                 RoomType = RoomType.Double,
+                Capacity = 2,
                 Hotel = hotel
             };
 
@@ -173,6 +179,7 @@ namespace ReserveMyRoom.API.Tests.Services
             {
                 RoomNumber = "201",
                 RoomType = RoomType.Double,
+                Capacity = 2,
                 Hotel = hotel
             };
 
@@ -192,7 +199,7 @@ namespace ReserveMyRoom.API.Tests.Services
             var bookingService = new BookingService(context);
 
             var result = await bookingService
-                .GetBookingByReferenceAsync("BK-TEST-001");
+                .GetBookingByReferenceAsync("bk-test-001");
 
             Assert.NotNull(result);
             Assert.Equal("BK-TEST-001", result.BookingReference);
@@ -265,7 +272,7 @@ namespace ReserveMyRoom.API.Tests.Services
         }
 
         [Fact]
-        public async Task GetAvailableRoomsAsync_ShouldReturnOnlyRoomsThatCanAccommodateGuests()
+        public async Task GetAvailableRoomsAsync_ShouldUseConfiguredRoomCapacity()
         {
             await using var context = CreateContext();
 
@@ -275,33 +282,36 @@ namespace ReserveMyRoom.API.Tests.Services
                 Address = "London"
             };
 
-            var singleRoom = new Room
+            var higherCapacityRoom = new Room
             {
                 RoomNumber = "101",
                 RoomType = RoomType.Single,
+                Capacity = 3,
                 Hotel = hotel
             };
 
-            var doubleRoom = new Room
+            var lowerCapacityRoom = new Room
             {
                 RoomNumber = "102",
                 RoomType = RoomType.Double,
+                Capacity = 1,
                 Hotel = hotel
             };
 
-            context.Rooms.AddRange(singleRoom, doubleRoom);
+            context.Rooms.AddRange(higherCapacityRoom, lowerCapacityRoom);
             await context.SaveChangesAsync();
 
-            var hotelService = new HotelService(context);
+            var roomService = new RoomService(context);
 
-            var result = await hotelService.GetAvailableRoomsAsync(
-                hotel.Id,
+            var result = await roomService.GetAvailableRoomsAsync(
                 DateOnly.FromDateTime(DateTime.Today.AddDays(1)),
                 DateOnly.FromDateTime(DateTime.Today.AddDays(2)),
-                2);
+                2,
+                hotel.Id);
 
             Assert.Single(result);
-            Assert.Equal("102", result.First().RoomNumber);
+            Assert.Equal("101", result.First().RoomNumber);
+            Assert.Equal(3, result.First().Capacity);
         }
 
         [Fact]
@@ -320,6 +330,7 @@ namespace ReserveMyRoom.API.Tests.Services
             {
                 RoomNumber = "101",
                 RoomType = RoomType.Double,
+                Capacity = 2,
                 Hotel = hotel
             };
 
@@ -338,7 +349,7 @@ namespace ReserveMyRoom.API.Tests.Services
 
             await context.SaveChangesAsync();
 
-            var hotelService = new HotelService(context);
+            var roomService = new RoomService(context);
 
             var requestedCheckIn =
                 DateOnly.FromDateTime(DateTime.Today.AddDays(5));
@@ -347,11 +358,11 @@ namespace ReserveMyRoom.API.Tests.Services
                 DateOnly.FromDateTime(DateTime.Today.AddDays(7));
 
             // Act
-            var result = await hotelService.GetAvailableRoomsAsync(
-                hotel.Id,
+            var result = await roomService.GetAvailableRoomsAsync(
                 requestedCheckIn,
                 requestedCheckOut,
-                2);
+                2,
+                hotel.Id);
 
             // Assert
             Assert.Single(result);
@@ -423,7 +434,6 @@ namespace ReserveMyRoom.API.Tests.Services
 
         [Theory]
         [InlineData(0)]
-        [InlineData(5)]
         public async Task CreateBookingAsync_ShouldRejectInvalidGuestCount(
             int numberOfGuests)
         {
@@ -467,17 +477,87 @@ namespace ReserveMyRoom.API.Tests.Services
         }
 
         [Fact]
+        public async Task CreateBookingAsync_ShouldAllowMoreThanFourGuests_WhenRoomCapacityAllows()
+        {
+            await using var context = CreateContext();
+            var room = AddRoom(context);
+            await context.SaveChangesAsync();
+            var service = new BookingService(context);
+
+            var result = await service.CreateBookingAsync(new RequestBooking
+            {
+                RoomId = room.Id,
+                GuestName = "Large Group",
+                NumberOfGuests = 5,
+                CheckInDate = FutureDate(1),
+                CheckOutDate = FutureDate(2)
+            });
+
+            Assert.Equal(5, result.NumberOfGuests);
+        }
+
+        [Fact]
         public async Task GetAvailableRoomsAsync_ShouldThrow_WhenHotelDoesNotExist()
         {
             await using var context = CreateContext();
-            var service = new HotelService(context);
+            var service = new RoomService(context);
 
             await Assert.ThrowsAsync<KeyNotFoundException>(() =>
                 service.GetAvailableRoomsAsync(
-                    999,
                     FutureDate(1),
                     FutureDate(2),
-                    1));
+                    1,
+                    999));
+        }
+
+        [Fact]
+        public async Task GetAvailableRoomsAsync_ShouldSearchAcrossAllHotels_WhenFilterIsOmitted()
+        {
+            await using var context = CreateContext();
+            context.Rooms.AddRange(
+                new Room
+                {
+                    RoomNumber = "101",
+                    RoomType = RoomType.Single,
+                    Capacity = 2,
+                    Hotel = new Hotel
+                    {
+                        Name = "London Hotel",
+                        Address = "London"
+                    }
+                },
+                new Room
+                {
+                    RoomNumber = "201",
+                    RoomType = RoomType.Deluxe,
+                    Capacity = 5,
+                    Hotel = new Hotel
+                    {
+                        Name = "Paris Hotel",
+                        Address = "Paris"
+                    }
+                });
+            await context.SaveChangesAsync();
+            var service = new RoomService(context);
+
+            var result = await service.GetAvailableRoomsAsync(
+                FutureDate(1),
+                FutureDate(2),
+                2);
+
+            Assert.Equal(2, result.Count);
+            Assert.Collection(
+                result,
+                room =>
+                {
+                    Assert.Equal("London Hotel", room.HotelName);
+                    Assert.True(room.HotelId > 0);
+                },
+                room =>
+                {
+                    Assert.Equal("Paris Hotel", room.HotelName);
+                    Assert.True(room.HotelId > 0);
+                });
         }
 
         [Fact]
@@ -496,6 +576,7 @@ namespace ReserveMyRoom.API.Tests.Services
             {
                 RoomNumber = "101",
                 RoomType = RoomType.Deluxe,
+                Capacity = 6,
                 Hotel = new Hotel
                 {
                     Name = "Test Hotel",

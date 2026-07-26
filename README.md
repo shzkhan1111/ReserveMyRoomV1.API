@@ -16,7 +16,8 @@ Setup:
 2. Apply the database migrations:
 
    dotnet ef database update --project ReserveMyRoom/ReserveMyRoom.API.csproj
-   (If any problem run database.sql In Sql Server)
+
+   Alternatively, run database.sql in SQL Server Management Studio.
 3. Run the API:
 
    dotnet run --project ReserveMyRoom/ReserveMyRoom.API.csproj
@@ -31,15 +32,29 @@ Main endpoints:
 
 - GET /api/hotels
 - GET /api/hotels/search?name={name}
-- GET /api/hotels/{hotelId}/rooms/available
+- GET /api/rooms/available?checkInDate={date}&checkOutDate={date}&numberOfGuests={guests}
 - POST /api/bookings
 - GET /api/bookings/{bookingReference}
 - POST /api/data/seed
 - DELETE /api/data
 
+Room availability searches all hotels by default. Pass `hotelId` as an optional
+query parameter to restrict the results to one hotel.
 
-Assumptions
--Each Hotel has 6 rooms
--2 single, 2 Double, 2 Deluxe rooms carrying 1, 2, 4 Guest respectively 
--A booking of more than 4 people is not allowed 
 
+Business rules and assumptions:
+
+- Each hotel has exactly 6 rooms.
+- Hotels and rooms are immutable reference data populated through the seed
+  endpoint; the API does not provide hotel or room management endpoints.
+- Single, Double, and Deluxe are room categories only.
+- Capacity is configured separately for every room.
+- There is no fixed maximum booking size. The selected room must have enough
+  capacity for the number of guests.
+- The room distribution and capacities in the seed data are examples, not
+  business rules.
+
+
+Used AI to review and refactor the code, focusing on improvements that remain within the business requirements.
+
+To Test the endpoint on swagger refer to TEST_GUIDE.md file 
